@@ -41,7 +41,7 @@ export default {
       fetch(`https://walkie-talkie-service-3809-dev.twil.io/token?identity=${this.identity}`)
       .then(response => response.json())
       .then(data => {
-        this.device.setup(data.accessToken, {debug: false});
+        this.device.setup(data.accessToken, {debug: true});
         this.device.audio.incoming(false);
         this.device.audio.outgoing(false);
         this.device.audio.disconnect(false);
