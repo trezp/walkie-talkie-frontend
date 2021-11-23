@@ -1,14 +1,23 @@
 <template>
   <div>
-    <button v-if="status === ready">Press To Talk</button>
+    <button v-if="ready"
+      v-on:mousedown="connect"
+      v-on:mouseup="disconnect">
+      Press To Talk
+    </button>
     <div v-else>
-      <p>Enter your name to begin.</p>
-      <form>
-        <input type="text" placeholder="What's your name?">
-        <input type="submit" value="Begin Session">
+      <form v-on:submit="setUp">
+        <p><label for="chooseHandle">Choose a Handle To Begin</label></p>
+        <select name="selectedIdentity" id="chooseHandle" v-model="identity">
+          <option disabled>Choose a Handle</option>
+          <option value="friend1">friend1</option>
+          <option value="friend2">friend2</option>
+        </select>
+        <button type="submit">Begin Session</button>
       </form>
     </div>
-    <p>{{ status }}</p>
+    <p v-if="status">Status: {{ status }}</p>
+    <p v-if="identity">Handle: {{ identity }} </p>
   </div>
 </template>
 
@@ -20,35 +29,57 @@ export default {
   data(){
     return {
       identity: '',
-      status: 'There is no status',
-      ready: false
+      status: '',
+      ready: false,
+      device: null
     }
   },
   methods: {
     setUp(event){
       event.preventDefault();
+  
+      fetch(`https://walkie-talkie-service-3809-dev.twil.io/token?identity=${this.identity}`)
+      .then(response => response.json())
+      .then(data => {
+        this.device.setup(data.accessToken, {debug: false});
+        this.device.audio.incoming(false);
+        this.device.audio.outgoing(false);
+        this.device.audio.disconnect(false);
+    })
+    .catch(err => console.log(err))
+    },
+    connect(){
+      console.log('connect')
+      const recipient = this.identity === 'friend1' ? 'friend2' : 'friend1';
+      this.device.connect({recipient: recipient});
+    },
+    disconnect(){
+      this.device.disconnectAll();
     }
   },
   mounted(){
-    const device = new Device();
-    console.log(device)
+    this.device = new Device();
 
-    device.on('incoming', connection => {
+    this.device.on('incoming', connection => {
       // immediately accepts incoming connection
+      console.log('incoming')
       connection.accept();
       this.status = connection.status();
     });
 
-    device.on('ready', () => {
+    this.device.on('ready', () => {
+      console.log('ready')
       this.status = "device ready"; 
       this.ready = true; 
     });
 
-    device.on('connect', connection => {
+    this.device.on('connect', connection => {
+      console.log('connect')
       this.status = connection.status();
     });
 
-    device.on('disconnect', connection => {
+    this.device.on('disconnect', connection => {
+      console.log('disconnect')
       this.status = connection.status();
     });
   },
